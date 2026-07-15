@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak Label Otomatis - Double Two Interior</title>
+    <title>Cetak Label 24mm - Double Two Interior</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
@@ -13,23 +13,24 @@
            Tape 24mm | Potongan 50mm (Landscape)
            ========================================= */
         @media print {
-            body * {
-                visibility: hidden;
+            body > :not(#printAreaWrapper) {
+                display: none !important;
             }
-            #printArea, #printArea * {
-                visibility: visible;
+            body {
+                background-color: transparent !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
-            #printArea {
+            #printAreaWrapper {
+                display: flex !important;
                 position: fixed;
-                left: 0;
                 top: 0;
+                left: 0;
                 width: 50mm !important;
                 height: 24mm !important;
+                background: white !important; 
                 padding: 1.5mm !important;
-                margin: 0 !important;
                 box-sizing: border-box !important;
-                background-color: white !important;
-                display: flex !important;
                 align-items: center !important;
                 justify-content: flex-start !important;
                 gap: 2mm !important;
@@ -42,75 +43,72 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen pb-10">
 
-    <div class="bg-white p-8 rounded-2xl shadow-lg max-w-lg w-full border border-gray-200">
-        
-        <div class="text-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-900 uppercase tracking-widest">Cetak Label 24mm</h1>
-            <p class="text-sm text-gray-500">Auto-Sync Google Sheets (Khusus SKU Induk)</p>
-        </div>
-
-        <div id="loadingStatus" class="mb-4 text-center text-sm font-bold text-amber-500 animate-pulse">
-            ⏳ Sedang menghubungkan ke Database...
-        </div>
-
-        <div class="space-y-4">
+    <div class="bg-white shadow-sm p-5 mb-6 border-b border-gray-200">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
             <div>
-                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Cari Produk / SKU Induk</label>
-                <input type="text" id="searchBox" list="skuList" onchange="autoFillLabel()" onkeyup="autoFillLabel()" placeholder="Ketik nama sampel atau SKU..." class="w-full p-3.5 rounded-xl border-2 border-gray-300 focus:border-amber-400 outline-none transition-all text-sm font-medium bg-gray-50">
-                <datalist id="skuList"></datalist>
+                <h1 class="text-xl font-black text-gray-900 uppercase tracking-wider">Cetak Label Fisik</h1>
+                <p class="text-xs text-gray-500 font-medium">Epson LW-600P (24x50mm) - Khusus SKU Induk</p>
             </div>
-            
-            <p class="text-xs text-gray-400 italic">*Pilih dari daftar drop-down, label akan terisi otomatis.</p>
+            <div id="loadingStatus" class="text-sm font-bold text-amber-500 animate-pulse">
+                ⏳ Memuat Data...
+            </div>
+        </div>
+    </div>
+
+    <div class="max-w-5xl mx-auto px-4 space-y-4">
+        
+        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 Cari nama sampel atau SKU..." class="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 outline-none transition-all text-sm">
         </div>
 
-        <hr class="my-8 border-gray-200">
-
-        <div class="flex flex-col items-center">
-            <p class="text-xs font-bold text-gray-400 uppercase mb-3">Pratinjau Kertas Aktual (50x24 mm)</p>
-            
-            <div id="printArea" style="width: 50mm; height: 24mm; padding: 1.5mm;" class="bg-[#FDE047] border border-gray-400 flex items-center shadow-inner overflow-hidden rounded-sm">
-                
-                <div style="width: 20mm; height: 20mm; flex-shrink: 0; background: white; padding: 1mm; border-radius: 2px; display: flex; justify-content: center; align-items: center;">
-                    <canvas id="qrCanvas" style="width: 100%; height: 100%;"></canvas>
-                </div>
-
-                <div style="flex-grow: 1; padding-left: 2mm; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
-                    <div id="lblNama" style="font-family: Arial, sans-serif; font-size: 8.5pt; font-weight: 900; color: black; line-height: 1.1; text-transform: uppercase; max-height: 19pt; overflow: hidden;">
-                        SAMPEL PRODUK
-                    </div>
-                    
-                    <div id="lblSKU" style="font-family: Arial, sans-serif; font-size: 6pt; font-weight: bold; color: #444; margin-top: 1px;">
-                        SKU-000
-                    </div>
-                    
-                    <div id="lblHarga" style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: 900; color: black; margin-top: 2px; letter-spacing: -0.5px;">
-                        Rp 0
-                    </div>
-                </div>
-
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100 text-xs uppercase tracking-wider text-gray-600">
+                            <th class="p-4 border-b">SKU Induk</th>
+                            <th class="p-4 border-b">Nama Sampel</th>
+                            <th class="p-4 border-b">Harga Jual</th>
+                            <th class="p-4 border-b text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody" class="text-sm divide-y divide-gray-100">
+                        </tbody>
+                </table>
             </div>
-
-            <button id="btnPrint" onclick="window.print()" disabled class="w-full bg-gray-300 text-gray-500 font-extrabold py-4 rounded-xl shadow-sm transition-all mt-6 text-lg flex justify-center items-center gap-2 cursor-not-allowed">
-                🖨️ CETAK LABEL SEKARANG
-            </button>
         </div>
+    </div>
 
+    <div id="printAreaWrapper" class="hidden">
+        <div style="width: 20mm; height: 20mm; flex-shrink: 0; background: white; padding: 1mm; border-radius: 2px; display: flex; justify-content: center; align-items: center;">
+            <canvas id="qrCanvas" style="width: 100%; height: 100%;"></canvas>
+        </div>
+        <div style="flex-grow: 1; padding-left: 2mm; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+            <div id="lblNama" style="font-family: Arial, sans-serif; font-size: 8.5pt; font-weight: 900; color: black; line-height: 1.1; text-transform: uppercase; max-height: 19pt; overflow: hidden;">
+                NAMA SAMPEL
+            </div>
+            <div id="lblSKU" style="font-family: Arial, sans-serif; font-size: 6pt; font-weight: bold; color: #444; margin-top: 1px;">
+                SKU-000
+            </div>
+            <div id="lblHarga" style="font-family: Arial, sans-serif; font-size: 11pt; font-weight: 900; color: black; margin-top: 2px; letter-spacing: -0.5px;">
+                Rp 0
+            </div>
+        </div>
     </div>
 
     <script>
-        // Link CSV Google Sheets Database Anda
         const csvUrl = 'https://docs.google.com/spreadsheets/d/1O52V8VzB-2jFh16oG-qjU1xO8M38mYm6/export?format=csv'; 
-        
-        let productDatabase = {}; // Menyimpan data spesifik
+        let globalData = []; // Menyimpan data SKU Induk murni
+
+        // Inisialisasi QRious (Satu objek dipakai berulang)
         let qr = new QRious({
             element: document.getElementById('qrCanvas'),
             background: 'white',
             foreground: 'black',
             level: 'H',
-            size: 200,
-            value: 'DTI'
+            size: 250 // Resolusi tinggi untuk cetak thermal
         });
 
         // Format Rupiah
@@ -119,20 +117,20 @@
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
         }
 
-        // Ambil Data CSV saat halaman dimuat
+        // Ambil Data CSV
         async function fetchDatabase() {
             try {
                 const response = await fetch(csvUrl);
                 const csvText = await response.text();
-                parseCSVToDict(csvText);
+                parseCSV(csvText);
             } catch (error) {
-                document.getElementById('loadingStatus').innerText = "❌ Gagal memuat database. Pastikan koneksi internet aktif.";
-                document.getElementById('loadingStatus').classList.replace('text-amber-500', 'text-red-500');
+                document.getElementById('loadingStatus').innerText = "❌ Gagal memuat database.";
+                document.getElementById('loadingStatus').classList.replace('text-amber-500', 'text-red-600');
             }
         }
 
-        // Parsing CSV dan Filter HANYA SKU Induk
-        function parseCSVToDict(str) {
+        // Parsing & Filter HANYA SKU Induk
+        function parseCSV(str) {
             const arr = [];
             let quote = false, row = 0, col = 0;
             for (let c = 0; c < str.length; c++) {
@@ -148,70 +146,89 @@
                 arr[row][col] += cc;
             }
             
-            arr.shift(); // Buang Header Row 1
+            arr.shift(); // Buang Header Row
 
-            const dataListElement = document.getElementById('skuList');
-            productDatabase = {}; // Reset
+            const seenSKU = new Set();
+            globalData = [];
 
             arr.forEach(rowData => {
                 const sku = rowData[1];     // Kolom SKU
                 const nama = rowData[3];    // Kolom Nama Sampel
                 const harga = rowData[6];   // Kolom Harga Jual
 
-                // Mencegah duplikat: Jika SKU Induk sudah masuk ke database, lewati baris varian berikutnya
-                if (sku && !productDatabase[sku]) {
-                    // Simpan data
-                    productDatabase[sku] = {
+                // FILTER: Hanya masukkan jika SKU belum ada di Set (Otomatis membuang varian duplikat)
+                if (sku && !seenSKU.has(sku)) {
+                    seenSKU.add(sku);
+                    globalData.push({
+                        sku: sku,
                         nama: nama,
                         harga: harga
-                    };
-
-                    // Tambahkan ke dropdown pencarian (Format: SKU | Nama Produk)
-                    const option = document.createElement('option');
-                    option.value = sku;
-                    option.text = nama;
-                    dataListElement.appendChild(option);
+                    });
                 }
             });
 
             // Update UI Sukses
-            document.getElementById('loadingStatus').innerText = "✅ Database Terhubung. Silakan cari produk.";
+            document.getElementById('loadingStatus').innerText = "✅ Database Siap";
             document.getElementById('loadingStatus').classList.replace('text-amber-500', 'text-emerald-600');
             document.getElementById('loadingStatus').classList.remove('animate-pulse');
+
+            // Render Tabel Pertama Kali
+            renderTable(globalData);
         }
 
-        // Fungsi Auto-Fill saat Admin memilih produk
-        function autoFillLabel() {
-            const inputVal = document.getElementById('searchBox').value.trim();
-            const btnPrint = document.getElementById('btnPrint');
+        // Render Data ke Tabel HTML
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
 
-            // Cek apakah SKU yang diketik/dipilih ada di database (SKU Induk)
-            if (productDatabase[inputVal]) {
-                const data = productDatabase[inputVal];
-
-                // Update UI Label
-                document.getElementById('lblSKU').innerText = inputVal.toUpperCase();
-                document.getElementById('lblNama').innerText = data.nama.toUpperCase();
-                
-                // HARGA DIPERBESAR DAN TANPA SATUAN
-                document.getElementById('lblHarga').innerText = formatRupiah(data.harga);
-
-                // Update QR Code
-                qr.value = inputVal.toUpperCase();
-
-                // Aktifkan tombol print
-                btnPrint.disabled = false;
-                btnPrint.classList.remove('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
-                btnPrint.classList.add('bg-amber-400', 'hover:bg-amber-500', 'text-black', 'shadow-md', 'cursor-pointer');
-            } else {
-                // Nonaktifkan tombol print jika input tidak valid
-                btnPrint.disabled = true;
-                btnPrint.classList.add('bg-gray-300', 'text-gray-500', 'cursor-not-allowed');
-                btnPrint.classList.remove('bg-amber-400', 'hover:bg-amber-500', 'text-black', 'shadow-md', 'cursor-pointer');
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-500 italic">Data tidak ditemukan...</td></tr>`;
+                return;
             }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-amber-50 transition-colors';
+                
+                // Gunakan backticks untuk HTML multi-baris
+                tr.innerHTML = `
+                    <td class="p-4 font-mono text-xs font-bold text-gray-600">${item.sku}</td>
+                    <td class="p-4 font-bold text-gray-900 uppercase">${item.nama}</td>
+                    <td class="p-4 font-black text-emerald-600">${formatRupiah(item.harga)}</td>
+                    <td class="p-4 text-center">
+                        <button onclick="cetakLabel('${item.sku}', '${item.nama}', '${item.harga}')" class="bg-gray-900 hover:bg-black text-white px-4 py-2 rounded-lg text-xs font-bold shadow-sm transition-all flex items-center justify-center gap-2 w-full mx-auto max-w-[120px]">
+                            🖨️ Cetak
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
-        // Jalankan tarik data otomatis saat pertama kali buka web
+        // Fitur Filter/Pencarian Instan
+        function filterTable() {
+            const keyword = document.getElementById('searchInput').value.toLowerCase();
+            const filteredData = globalData.filter(item => {
+                return item.nama.toLowerCase().includes(keyword) || item.sku.toLowerCase().includes(keyword);
+            });
+            renderTable(filteredData);
+        }
+
+        // --- EKSEKUSI CETAK LABEL ---
+        function cetakLabel(sku, nama, harga) {
+            // 1. Masukkan Teks ke area cetak tersembunyi
+            document.getElementById('lblSKU').innerText = sku.toUpperCase();
+            document.getElementById('lblNama').innerText = nama.toUpperCase();
+            document.getElementById('lblHarga').innerText = formatRupiah(harga); // Harga diperbesar, tanpa satuan
+
+            // 2. Generate QR Code
+            qr.value = sku.toUpperCase();
+
+            // 3. Panggil Dialog Print Browser
+            window.print();
+        }
+
+        // Tarik data saat halaman dibuka
         window.onload = fetchDatabase;
     </script>
 </body>
