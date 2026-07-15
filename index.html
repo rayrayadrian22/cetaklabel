@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Label Generator - Double Two Interior</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
+    <style>
+        /* =========================================
+           PENGATURAN CETAK KHUSUS EPSON LW-600P
+           Tape 24mm | Potongan 50mm (Landscape)
+           ========================================= */
+        @media print {
+            /* Sembunyikan semua elemen UI Web */
+            body * {
+                visibility: hidden;
+            }
+            /* Tampilkan HANYA kotak label */
+            #printArea, #printArea * {
+                visibility: visible;
+            }
+            
+            /* Posisikan label pas di pojok kiri atas kertas cetak */
+            #printArea {
+                position: fixed;
+                left: 0;
+                top: 0;
+                width: 50mm !important;
+                height: 24mm !important;
+                padding: 1.5mm !important;
+                margin: 0 !important;
+                box-sizing: border-box !important;
+                background-color: white !important; /* Akan transparan di kertas kuning */
+                display: flex !important;
+                align-items: center !important;
+                justify-content: flex-start !important;
+                gap: 2mm !important;
+                page-break-after: always;
+            }
+
+            @page {
+                size: 50mm 24mm;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-8 rounded-2xl shadow-lg max-w-lg w-full border border-gray-200">
+        
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 uppercase tracking-widest">Cetak Label 24mm</h1>
+            <p class="text-sm text-gray-500">Khusus Sampel Induk - Epson LW-600P</p>
+        </div>
+
+        <div class="space-y-4">
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">SKU Induk (Untuk QR Code)</label>
+                <input type="text" id="inputSKU" placeholder="Contoh: SND-01" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 outline-none transition-all uppercase">
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Judul Sampel</label>
+                <input type="text" id="inputNama" placeholder="Contoh: Sandblast Polos" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 outline-none transition-all uppercase">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Harga Jual</label>
+                    <input type="number" id="inputHarga" placeholder="45000" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 outline-none transition-all">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Satuan</label>
+                    <select id="inputSatuan" class="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 outline-none bg-white">
+                        <option value="Meter">/ Meter</option>
+                        <option value="Pcs">/ Pcs</option>
+                        <option value="m²">/ m²</option>
+                        <option value="Roll">/ Roll</option>
+                    </select>
+                </div>
+            </div>
+
+            <button onclick="generateLabel()" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-3 rounded-lg shadow transition-all mt-2">
+                🔄 Update Pratinjau
+            </button>
+        </div>
+
+        <hr class="my-8 border-gray-200">
+
+        <div class="flex flex-col items-center">
+            <p class="text-xs font-bold text-gray-400 uppercase mb-3">Pratinjau Kertas Aktual (50x24 mm)</p>
+            
+            <div id="printArea" style="width: 50mm; height: 24mm; padding: 1.5mm;" class="bg-[#FDE047] border border-gray-400 flex items-center shadow-inner overflow-hidden">
+                
+                <div style="width: 20mm; height: 20mm; flex-shrink: 0; background: white; padding: 1mm; border-radius: 2px; display: flex; justify-content: center; align-items: center;">
+                    <canvas id="qrCanvas" style="width: 100%; height: 100%;"></canvas>
+                </div>
+
+                <div style="flex-grow: 1; padding-left: 2mm; display: flex; flex-direction: column; justify-content: center; overflow: hidden;">
+                    <div id="lblNama" style="font-family: Arial, sans-serif; font-size: 9pt; font-weight: 900; color: black; line-height: 1.1; text-transform: uppercase; max-height: 20pt; overflow: hidden;">
+                        SAMPEL PRODUK
+                    </div>
+                    
+                    <div id="lblSKU" style="font-family: Arial, sans-serif; font-size: 6pt; font-weight: bold; color: #333; margin-top: 2px;">
+                        SKU-000
+                    </div>
+                    
+                    <div id="lblHarga" style="font-family: Arial, sans-serif; font-size: 8.5pt; font-weight: 900; color: black; margin-top: 3px;">
+                        Rp 0 / Meter
+                    </div>
+                </div>
+
+            </div>
+
+            <button onclick="window.print()" class="w-full bg-amber-400 hover:bg-amber-500 text-black font-extrabold py-4 rounded-lg shadow-md transition-all mt-6 text-lg flex justify-center items-center gap-2">
+                🖨️ CETAK LABEL SEKARANG
+            </button>
+        </div>
+
+    </div>
+
+    <script>
+        // Fungsi Format Rupiah
+        function formatRupiah(angka) {
+            if(!angka || isNaN(angka)) return "Rp 0";
+            return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
+        }
+
+        // Object QRious Global
+        let qr = new QRious({
+            element: document.getElementById('qrCanvas'),
+            background: 'white',
+            foreground: 'black',
+            level: 'H', // High error correction (aman jika stiker kotor/tergores)
+            size: 200, // Resolusi render kanvas (diperkecil otomatis oleh CSS)
+            value: 'SKU-000'
+        });
+
+        function generateLabel() {
+            // Ambil Nilai dari Input
+            const sku = document.getElementById('inputSKU').value || 'SKU-000';
+            const nama = document.getElementById('inputNama').value || 'SAMPEL PRODUK';
+            const harga = document.getElementById('inputHarga').value || 0;
+            const satuan = document.getElementById('inputSatuan').value;
+
+            // Masukkan Teks ke elemen pratinjau/cetak
+            document.getElementById('lblSKU').innerText = sku.toUpperCase();
+            document.getElementById('lblNama').innerText = nama.toUpperCase();
+            document.getElementById('lblHarga').innerText = formatRupiah(harga) + " " + satuan;
+
+            // Update isi QR Code dengan SKU baru
+            qr.value = sku.toUpperCase();
+        }
+
+        // Jalankan render awal
+        window.onload = generateLabel;
+    </script>
+</body>
+</html>
