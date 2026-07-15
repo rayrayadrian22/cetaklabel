@@ -117,14 +117,22 @@
             return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(angka);
         }
 
-        // Ambil Data CSV
+// Ambil Data CSV
         async function fetchDatabase() {
             try {
                 const response = await fetch(csvUrl);
                 const csvText = await response.text();
+
+                // 🛡️ FITUR KEAMANAN BARU: Cek jika yang ter-download malah kode HTML/Login Page
+                if (csvText.trim().toLowerCase().startsWith('<!doctype') || csvText.trim().toLowerCase().startsWith('<html')) {
+                    document.getElementById('loadingStatus').innerText = "❌ Akses Ditolak! Ubah setting Share Google Sheets menjadi 'Anyone with the link'.";
+                    document.getElementById('loadingStatus').classList.replace('text-amber-500', 'text-red-600');
+                    return; // Hentikan proses agar tabel tidak menampilkan kode aneh
+                }
+
                 parseCSV(csvText);
             } catch (error) {
-                document.getElementById('loadingStatus').innerText = "❌ Gagal memuat database.";
+                document.getElementById('loadingStatus').innerText = "❌ Gagal memuat database. Periksa koneksi internet.";
                 document.getElementById('loadingStatus').classList.replace('text-amber-500', 'text-red-600');
             }
         }
