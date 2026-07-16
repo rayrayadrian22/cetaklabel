@@ -3,318 +3,302 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Label Generator - Double Two Interior</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Cetak Label 24x50mm - Double Two Interior</title>
+    
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    
     <style>
-        /* Pengaturan Khusus Halaman Cetak (Print Area) */
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            #printArea, #printArea * {
-                visibility: visible;
-            }
-            #printArea {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-            .no-print {
-                display: none !important;
-            }
-            /* Reset Margin Halaman Cetak */
-            @page {
-                margin: 0;
-            }
+        /* Gaya Tampilan Web (Tidak Ikut Tercetak) */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #f4f7f6; 
+            margin: 0; 
+            padding: 20px; 
+        }
+        .dashboard-ui { 
+            max-width: 500px; 
+            margin: 0 auto; 
+            background: white; 
+            padding: 25px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
+        }
+        h2 { text-align: center; color: #333; margin-top: 0; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #555;}
+        input, select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            border-radius: 5px; 
+            box-sizing: border-box; 
+        }
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: #2c3e50; 
+            color: white; 
+            border: none; 
+            border-radius: 5px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold; 
+            transition: 0.3s; 
+            margin-top: 10px;
+        }
+        button:hover { background-color: #1a252f; }
+        #status { font-size: 12px; color: #666; text-align: center; margin-bottom: 15px; }
+
+        /* Wadah Preview di Layar Komputer */
+        .preview-container { 
+            margin-top: 20px; 
+            border-top: 1px solid #eee; 
+            padding-top: 20px; 
+            display: flex; 
+            justify-content: center;
         }
 
-        /* Desain Kartu Label Fisik (Simulasi Ukuran Standar Thermal 50x30 mm / 40x30 mm) */
-        .label-card {
+        /* -------------------------------------------------------------
+           PENGATURAN AREA CETAK (THERMAL LABEL 50mm x 24mm)
+        -------------------------------------------------------------- */
+        #printArea {
+            display: none; /* Disembunyikan di UI utama, hanya dipanggil saat cetak */
+        }
+        
+        .label-box {
             width: 50mm;
-            height: 30mm;
-            padding: 2mm;
-            border: 1px dashed #ccc; /* Penanda potong saat preview, otomatis hilang/tidak kontras saat cetak thermal */
+            height: 24mm; /* Diperbarui dari 30mm menjadi 24mm */
+            background: white;
             box-sizing: border-box;
+            border: 1px dashed #ccc; 
+            padding: 1.5mm 2mm; /* Padding disesuaikan agar isi tidak terlalu mepet tepi */
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            background: #fff;
-            color: #000;
-            page-break-inside: avoid;
-            break-inside: avoid;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        .label-header {
+            font-size: 6.5px; /* Font dikecilkan sedikit */
+            font-weight: bold;
+            text-transform: uppercase;
+            text-align: center;
+            line-height: 1;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5mm;
+        }
+
+        .label-product {
+            font-size: 8px; /* Ukuran font produk */
+            font-weight: 800;
+            text-align: center;
+            line-height: 1.1;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .label-price {
+            font-size: 7.5px;
+            font-weight: bold;
+            margin-top: 0.5mm;
+        }
+
+        .barcode-container {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+        }
+
+        /* Media Print Khusus Tarikan Printer */
+        @media print {
+            body * { visibility: hidden; }
+            body { background: white; margin: 0; padding: 0; }
+            .dashboard-ui, .preview-container { display: none !important; }
+            
+            #printArea {
+                display: block;
+                position: absolute;
+                left: 0;
+                top: 0;
+            }
+
+            .label-box {
+                border: none; /* Garis panduan putus-putus hilang saat dicetak */
+                padding: 1.5mm; 
+            }
+
+            @page {
+                size: 50mm 24mm; /* Lebar 50mm, Tinggi Kertas (Tape) 24mm */
+                margin: 0mm;
+            }
         }
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen font-sans">
+<body>
 
-    <div class="no-print bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-            <div class="flex items-center gap-3">
-                <div class="bg-blue-600 text-white p-2 rounded-lg font-bold text-xl">DTI</div>
-                <div>
-                    <h1 class="text-lg font-bold text-gray-800">Cetak Label Harga Showroom</h1>
-                    <p class="text-xs text-gray-500">Sinkronisasi Real-time Database CSV G-Sheets</p>
-                </div>
-            </div>
-            <div class="flex items-center gap-2">
-                <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-lg shadow-sm flex items-center gap-2 text-sm transition-all">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
-                    Cetak Label Terpilih
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <div class="no-print max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="dashboard-ui">
+        <h2>Cetak Label Showroom</h2>
+        <div id="status">Mengunduh data dari database...</div>
         
-        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="font-bold text-gray-700 flex items-center gap-2">
-                    <span class="w-2 h-4 bg-blue-600 rounded-full"></span>
-                    Pilih Produk Showroom
-                </h2>
-                <span id="statusData" class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full font-medium">Memuat Data...</span>
-            </div>
-            
-            <input type="text" id="searchBar" oninput="filterProduk()" placeholder="Cari nama sampel, SKU, kode warna, atau kategori..." class="w-full bg-gray-50 border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
-
-            <div class="overflow-x-auto max-h-[600px] overflow-y-auto border border-gray-200 rounded-lg">
-                <table class="w-full text-left text-xs border-collapse">
-                    <thead class="bg-gray-50 text-gray-600 uppercase font-semibold sticky top-0 border-b border-gray-200">
-                        <tr>
-                            <th class="p-3 text-center"><input type="checkbox" id="selectAll" onclick="toggleSelectAll()"></th>
-                            <th class="p-3">Kategori</th>
-                            <th class="p-3">Nama Sampel</th>
-                            <th class="p-3">Kode Warna</th>
-                            <th class="p-3">Harga</th>
-                            <th class="p-3">SKU</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelProduk" class="divide-y divide-gray-200 text-gray-700">
-                        </tbody>
-                </table>
-            </div>
+        <div class="form-group">
+            <label for="searchSKU">Cari Sampel (Nama / SKU):</label>
+            <input type="text" id="searchSKU" placeholder="Ketik Gorden Grand 05..." autocomplete="off">
+        </div>
+        
+        <div class="form-group">
+            <select id="resultList" size="6" style="display:none;"></select>
         </div>
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto">
-            <h2 class="font-bold text-gray-700 flex items-center gap-2 mb-4">
-                <span class="w-2 h-4 bg-green-500 rounded-full"></span>
-                Live Preview Kertas Cetak
-            </h2>
-            <p class="text-xs text-gray-400 mb-4">Tampilan di bawah ini adalah simulasi presisi ukuran label saat keluar dari printer thermal.</p>
-            
-            <div class="flex flex-wrap gap-4 justify-center bg-gray-50 border border-gray-200 rounded-xl p-4 min-h-[150px]" id="previewPrintArea">
-                <p id="placeholderPreview" class="text-sm text-gray-400 self-center text-center">Belum ada produk yang dipilih untuk dicetak.</p>
-            </div>
-        </div>
+        <button onclick="window.print()">🖨️ Cetak Label</button>
 
+        <div class="preview-container">
+            <div id="previewBox">
+                </div>
+        </div>
     </div>
 
-    <div id="printArea" class="flex flex-wrap gap-0"></div>
-
+    <div id="printArea">
+        <div class="label-box">
+            <div class="label-header">DOUBLE TWO INTERIOR</div>
+            <div class="label-product" id="lblProduct">Silakan Pilih Produk</div>
+            <div class="barcode-container">
+                <svg id="lblBarcode"></svg>
+            </div>
+            <div class="label-price" id="lblPrice">Rp 0 / Satuan</div>
+        </div>
+    </div>
 
     <script>
-        const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScNAy0w1lHYGke4r8BL9D-9ZpwJMlpk2Joh0Z0pEI_XSlXxhldetTXzCL_MnQfbEOrT-uu6XAqIfte/pub?output=csv';
-        let databaseProduk = [];
+        // Link CSV Google Sheets (Terintegrasi Langsung)
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScNAy0w1lHYGke4r8BL9D-9ZpwJMlpk2Joh0Z0pEI_XSlXxhldetTXzCL_MnQfbEOrT-uu6XAqIfte/pub?output=csv';
+        let productData = [];
 
-        // 1. Ambil data secara aman dari terbitan Web Google Sheets CSV
-        async function loadDatabase() {
+        async function fetchDatabase() {
             try {
-                const response = await fetch(CSV_URL);
-                if (!response.ok) throw new Error("Gagal mengambil data dari Google Sheets");
+                const response = await fetch(csvUrl);
+                if (!response.ok) throw new Error('Gagal memuat');
+                const text = await response.text();
                 
-                const dataText = await response.text();
-                parseCSV(dataText);
+                if(text.trim().toLowerCase().startsWith("<!doctype html>")) {
+                    document.getElementById('status').innerText = "⚠️ Error: Akses tertutup. Cek pengaturan Publish to Web.";
+                    return;
+                }
                 
-                document.getElementById('statusData').textContent = 'Database Sinkron';
-                document.getElementById('statusData').className = 'text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium';
+                parseCSV(text);
+                document.getElementById('status').innerText = "✅ " + productData.length + " produk siap dicetak.";
             } catch (error) {
-                console.error(error);
-                document.getElementById('statusData').textContent = 'Gagal Sinkron';
-                document.getElementById('statusData').className = 'text-xs bg-red-100 text-red-800 px-2 py-1 rounded-full font-medium';
+                document.getElementById('status').innerText = "⚠️ Gagal mengambil data. Periksa jaringan internet.";
             }
         }
 
-        // 2. Parser CSV Sederhana dan Pemetaan Komponen Row 1
+        // Parser CSV yang tahan terhadap karakter koma di dalam teks (Robust Regex)
         function parseCSV(text) {
-            const lines = text.split('\n');
-            if(lines.length < 2) return;
-            
-            // Dapatkan header baris pertama
-            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
-            
-            databaseProduk = [];
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
+            const lines = text.split(/\r?\n/);
+            for(let i = 1; i < lines.length; i++) {
+                if(!lines[i].trim()) continue;
                 
-                // Ekspresi reguler untuk menangani tanda koma di dalam tanda kutip string harga
-                const matches = lines[i].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || lines[i].split(',');
-                const cleanRow = matches.map(v => v.trim().replace(/"/g, ''));
-                
-                // Bentuk objek produk terstruktur
-                let produk = {
-                    barcode: cleanRow[0] || '',
-                    sku: cleanRow[1] || '',
-                    kategori: cleanRow[2] || 'Umum', // Kolom Kategori (Urutan ke-3 di Spreadsheet)
-                    nama: cleanRow[3] || '',
-                    warna: cleanRow[4] || '',
-                    harga: cleanRow[6] || '0',
-                    satuan: cleanRow[7] || 'm'
-                };
-                
-                if(produk.nama) databaseProduk.push(produk);
-            }
-            renderTabel(databaseProduk);
-        }
-
-        // 3. Tampilkan data ke dalam tabel manajemen untk dipilih admin
-        function renderTabel(data) {
-            const tbody = document.getElementById('tabelProduk');
-            tbody.innerHTML = '';
-            
-            data.forEach((prod, index) => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-gray-50 transition-colors cursor-pointer';
-                tr.onclick = (e) => {
-                    if(e.target.type !== 'checkbox') {
-                        const cb = tr.querySelector('.produk-cb');
-                        cb.checked = !cb.checked;
-                        updateLabelQueue();
+                let inQuote = false;
+                let value = '';
+                let row = [];
+                for (let j = 0; j < lines[i].length; j++) {
+                    let char = lines[i][j];
+                    if (inQuote) {
+                        if (char === '"' && lines[i][j + 1] === '"') { value += '"'; j++; }
+                        else if (char === '"') { inQuote = false; }
+                        else { value += char; }
+                    } else {
+                        if (char === '"') { inQuote = true; }
+                        else if (char === ',') { row.push(value); value = ''; }
+                        else { value += char; }
                     }
-                };
+                }
+                row.push(value);
                 
-                tr.innerHTML = `
-                    <td class="p-3 text-center"><input type="checkbox" class="produk-cb" data-index="${index}" onchange="updateLabelQueue()"></td>
-                    <td class="p-3 font-medium text-gray-900">${prod.kategori}</td>
-                    <td class="p-3 font-semibold text-blue-600">${prod.nama}</td>
-                    <td class="p-3 font-mono text-gray-500">${prod.warna}</td>
-                    <td class="p-3">Rp ${parseInt(prod.harga || 0).toLocaleString('id-ID')} / ${prod.satuan}</td>
-                    <td class="p-3 text-gray-400 font-mono">${prod.sku}</td>
-                `;
-                tbody.appendChild(tr);
-            });
+                if(row.length >= 8) {
+                    const barcode = row[0] ? row[0].trim() : '';
+                    const sku = row[1] ? row[1].trim() : '';
+                    const nama = row[3] ? row[3].trim() : '';
+                    const warna = row[4] ? row[4].trim() : '';
+                    const harga = row[6] ? row[6].trim() : '';
+                    const satuan = row[7] ? row[7].trim() : '';
+
+                    if(sku || nama) {
+                        productData.push({ barcode, sku, nama, warna, harga, satuan });
+                    }
+                }
+            }
         }
 
-        // 4. Pencarian Real-time Lintas Kolom
-        function filterProduk() {
-            const keyword = document.getElementById('searchBar').value.toLowerCase();
-            const filtered = databaseProduk.filter(p => 
-                p.nama.toLowerCase().includes(keyword) ||
-                p.sku.toLowerCase().includes(keyword) ||
-                p.warna.toLowerCase().includes(keyword) ||
-                p.kategori.toLowerCase().includes(keyword)
-            );
-            renderTabel(filtered);
-        }
+        const searchInput = document.getElementById('searchSKU');
+        const resultList = document.getElementById('resultList');
 
-        // 5. Pilih Semua / Hapus Pilihan Semua Baris Sekaligus
-        function toggleSelectAll() {
-            const isChecked = document.getElementById('selectAll').checked;
-            document.querySelectorAll('.produk-cb').forEach(cb => cb.checked = isChecked);
-            updateLabelQueue();
-        }
-
-        // 6. Jalur Pembuat HTML Cetak (Injeksi Komponen Kategori ke Dalam Label)
-        function updateLabelQueue() {
-            const checkboxes = document.querySelectorAll('.produk-cb:checked');
-            const previewArea = document.getElementById('previewPrintArea');
-            const printArea = document.getElementById('printArea');
-            const placeholder = document.getElementById('placeholderPreview');
+        searchInput.addEventListener('input', function() {
+            const keyword = this.value.toLowerCase();
+            resultList.innerHTML = '';
             
-            // Bersihkan area lama
-            previewArea.innerHTML = '';
-            printArea.innerHTML = '';
-            
-            if (checkboxes.length === 0) {
-                previewArea.appendChild(placeholder);
+            if(keyword.length < 2) {
+                resultList.style.display = 'none';
                 return;
             }
 
-            checkboxes.forEach((cb) => {
-                const idx = cb.getAttribute('data-index');
-                const p = databaseProduk[idx];
-                
-                // Format ID unik untuk elemen SVG Barcode agar tidak bentrok
-                const barcodeId = `barcode-${idx}`;
-                const barcodePrintId = `barcode-print-${idx}`;
-                
-                // Template struktur HTML kartu label thermal premium DTI
-                const labelHTML = `
-                    <div class="label-card shadow-sm">
-                        <div class="flex justify-between items-center border-b border-gray-200 pb-[1px]" style="height: 4mm;">
-                            <span style="font-size: 5.5pt; font-weight: 800; letter-spacing: 0.3px; text-transform: uppercase;">Double Two Interior</span>
-                            <span style="font-size: 5pt; font-weight: 700; background: #000; color: #fff; padding: 1px 3px; border-radius: 2px; text-transform: uppercase; line-height: 1;">${p.kategori}</span>
-                        </div>
-                        
-                        <div style="margin-top: 1px; flex-grow: 1; display: flex; flex-direction: column; justify-content: center;">
-                            <div style="font-size: 8pt; font-weight: 700; line-height: 1.1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">
-                                ${p.nama}
-                            </div>
-                            <div style="font-size: 6pt; font-weight: 500; color: #444; margin-top: 0.5px;">
-                                Warna/Kode: <span style="font-weight: 700; font-family: monospace;">${p.warna}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-end justify-between" style="height: 14mm;">
-                            <div style="width: 26mm; display: flex; justify-content: start;">
-                                <svg class="barcode-svg" id="${barcodeId}"></svg>
-                            </div>
-                            <div class="text-right" style="width: 20mm; padding-bottom: 1px;">
-                                <div style="font-size: 4.5pt; color: #555; font-weight: 600; text-transform: uppercase; line-height: 1;">Harga Jual</div>
-                                <div style="font-size: 7.5pt; font-weight: 800; line-height: 1.2; white-space: nowrap;">
-                                    Rp ${parseInt(p.harga || 0).toLocaleString('id-ID')}
-                                </div>
-                                <div style="font-size: 4.5pt; color: #333; font-weight: bold; line-height: 1;">per ${p.satuan}</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                // Tambahkan ke Live Preview di layar laptop/HP admin
-                const previewWrapper = document.createElement('div');
-                previewWrapper.innerHTML = labelHTML;
-                previewArea.appendChild(previewWrapper.firstElementChild);
-                
-                // Tambahkan ke Area Print Nyata (Master Print Engine)
-                const printWrapper = document.createElement('div');
-                printWrapper.innerHTML = labelHTML.replace(barcodeId, barcodePrintId);
-                printArea.appendChild(printWrapper.firstElementChild);
-                
-                // Render grafik batang barcode menggunakan JsBarcode (Format CODE128 hemat ruang)
-                setTimeout(() => {
-                    const barcodeValue = p.barcode || p.sku || "00000000";
-                    
-                    // Render untuk preview layar
-                    JsBarcode(`#${barcodeId}`, barcodeValue, {
-                        format: "CODE128",
-                        width: 1.1,
-                        height: 38,
-                        displayValue: true,
-                        fontSize: 8,
-                        font: "monospace",
-                        textMargin: 1,
-                        margin: 0
-                    });
-                    
-                    // Render untuk hasil cetak printer thermal (dibuat warna hitam solid pekat)
-                    JsBarcode(`#${barcodePrintId}`, barcodeValue, {
-                        format: "CODE128",
-                        width: 1.1,
-                        height: 38,
-                        displayValue: true,
-                        fontSize: 8,
-                        font: "monospace",
-                        textMargin: 1,
-                        margin: 0
-                    });
-                }, 10);
-            });
-        }
+            const filtered = productData.filter(p => 
+                p.nama.toLowerCase().includes(keyword) || 
+                p.sku.toLowerCase().includes(keyword) ||
+                p.barcode.toLowerCase().includes(keyword)
+            ).slice(0, 10); 
 
-        // Muat data otomatis saat pertama kali halaman admin dibuka
-        window.onload = loadDatabase;
+            if(filtered.length > 0) {
+                resultList.style.display = 'block';
+                filtered.forEach(p => {
+                    const option = document.createElement('option');
+                    let displayText = p.nama;
+                    if(p.warna && p.warna !== "-") displayText += ` (${p.warna})`;
+                    option.text = displayText;
+                    option.value = JSON.stringify(p);
+                    resultList.add(option);
+                });
+            } else {
+                resultList.style.display = 'none';
+            }
+        });
+
+        resultList.addEventListener('change', function() {
+            if(!this.value) return;
+            const data = JSON.parse(this.value);
+            
+            let prodName = data.nama;
+            if(data.warna && data.warna !== "-") prodName += ` ${data.warna}`;
+            document.getElementById('lblProduct').innerText = prodName.substring(0, 26); 
+
+            let hargaFormat = parseInt(data.harga.replace(/\D/g,'')) || 0;
+            if(hargaFormat > 0) {
+                document.getElementById('lblPrice').innerText = `Rp ${hargaFormat.toLocaleString('id-ID')} / ${data.satuan}`;
+            } else {
+                document.getElementById('lblPrice').innerText = "Harga Belum Diatur";
+            }
+
+            const codeToPrint = data.barcode || data.sku;
+            if(codeToPrint) {
+                JsBarcode("#lblBarcode", codeToPrint, {
+                    format: "CODE128",
+                    displayValue: true,
+                    fontSize: 9, /* Font angka barcode dikecilkan sedikit */
+                    margin: 0,
+                    width: 1.3, 
+                    height: 20  /* TINGGI BARCODE DIPENDEKKAN agar muat di area 24mm */
+                });
+            }
+
+            document.getElementById('previewBox').innerHTML = document.getElementById('printArea').innerHTML;
+            document.getElementById('printArea').style.display = 'block'; 
+        });
+
+        fetchDatabase();
     </script>
 </body>
 </html>
