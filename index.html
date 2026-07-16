@@ -3,302 +3,344 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak Label 24x50mm - Double Two Interior</title>
-    
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    
+    <title>Double Two Interior - Cetak Label QR 24mm</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+
     <style>
-        /* Gaya Tampilan Web (Tidak Ikut Tercetak) */
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #f4f7f6; 
-            margin: 0; 
-            padding: 20px; 
-        }
-        .dashboard-ui { 
-            max-width: 500px; 
-            margin: 0 auto; 
-            background: white; 
-            padding: 25px; 
-            border-radius: 10px; 
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1); 
-        }
-        h2 { text-align: center; color: #333; margin-top: 0; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; color: #555;}
-        input, select { 
-            width: 100%; 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            border-radius: 5px; 
-            box-sizing: border-box; 
-        }
-        button { 
-            width: 100%; 
-            padding: 12px; 
-            background-color: #2c3e50; 
-            color: white; 
-            border: none; 
-            border-radius: 5px; 
-            cursor: pointer; 
-            font-size: 16px; 
-            font-weight: bold; 
-            transition: 0.3s; 
-            margin-top: 10px;
-        }
-        button:hover { background-color: #1a252f; }
-        #status { font-size: 12px; color: #666; text-align: center; margin-bottom: 15px; }
-
-        /* Wadah Preview di Layar Komputer */
-        .preview-container { 
-            margin-top: 20px; 
-            border-top: 1px solid #eee; 
-            padding-top: 20px; 
-            display: flex; 
-            justify-content: center;
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --border-color: #e2e8f0;
         }
 
-        /* -------------------------------------------------------------
-           PENGATURAN AREA CETAK (THERMAL LABEL 50mm x 24mm)
-        -------------------------------------------------------------- */
-        #printArea {
-            display: none; /* Disembunyikan di UI utama, hanya dipanggil saat cetak */
-        }
-        
-        .label-box {
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-main); padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        header { margin-bottom: 24px; text-align: center; }
+        header h1 { font-size: 24px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+        header p { color: var(--text-muted); font-size: 14px; }
+
+        /* Banner Status */
+        .status-banner { padding: 14px; border-radius: 8px; margin-bottom: 20px; font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 10px; border: 1px solid transparent; }
+        .status-loading { background-color: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .status-success { background-color: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+        .status-error { background-color: #fef2f2; color: #dc2626; border-color: #fecaca; }
+
+        /* Workspace Grid */
+        .workspace { display: grid; grid-template-columns: 1fr; gap: 20px; }
+        @media (min-width: 768px) { .workspace { grid-template-columns: 1.2fr 0.8fr; } }
+
+        .card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+        /* Pencarian */
+        .search-box { position: relative; margin-bottom: 16px; }
+        .search-box i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+        .search-box input { width: 100%; padding: 12px 12px 12px 40px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 14px; outline: none; transition: all 0.2s; }
+        .search-box input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+
+        /* List Produk (Hanya Induk) */
+        .product-list-wrapper { max-height: 400px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: 8px; }
+        .product-item { padding: 12px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .product-item:last-child { border-bottom: none; }
+        .product-item:hover { background-color: #f8fafc; border-left: 4px solid var(--primary); }
+        .product-info h4 { font-size: 13px; font-weight: 700; text-transform: uppercase;}
+        .product-info p { font-size: 12px; color: var(--text-muted); margin-top: 4px; font-family: monospace; }
+        .product-meta { text-align: right; }
+        .badge { font-size: 10px; padding: 3px 8px; border-radius: 12px; font-weight: 600; background: #e2e8f0; color: #475569; text-transform: uppercase; }
+
+        /* Area Pratinjau */
+        .preview-pane { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 250px; background: #f1f5f9; border-radius: 8px; border: 2px dashed #cbd5e1; padding: 20px; }
+
+        /* =========================================
+           STIKER CETAK (Ukuran 50mm x 24mm Landscape)
+           ========================================= */
+        .thermal-label-container {
             width: 50mm;
-            height: 24mm; /* Diperbarui dari 30mm menjadi 24mm */
-            background: white;
+            height: 24mm;
+            background: #ffffff;
+            color: #000000;
+            padding: 1.5mm;
             box-sizing: border-box;
-            border: 1px dashed #ccc; 
-            padding: 1.5mm 2mm; /* Padding disesuaikan agar isi tidak terlalu mepet tepi */
             display: flex;
-            flex-direction: column;
-            justify-content: space-between;
             align-items: center;
+            gap: 1.5mm;
+            overflow: hidden;
+            border: 1px solid #94a3b8; /* Garis tepi untuk pratinjau web */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .qr-box {
+            width: 19.5mm;
+            height: 19.5mm;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
             overflow: hidden;
         }
 
-        .label-header {
-            font-size: 6.5px; /* Font dikecilkan sedikit */
-            font-weight: bold;
-            text-transform: uppercase;
-            text-align: center;
-            line-height: 1;
-            letter-spacing: 0.5px;
-            margin-bottom: 0.5mm;
+        .qr-box canvas {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
         }
 
-        .label-product {
-            font-size: 8px; /* Ukuran font produk */
-            font-weight: 800;
-            text-align: center;
-            line-height: 1.1;
-            width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .label-price {
-            font-size: 7.5px;
-            font-weight: bold;
-            margin-top: 0.5mm;
-        }
-
-        .barcode-container {
+        .text-box {
             flex-grow: 1;
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: center;
-            width: 100%;
+            overflow: hidden;
         }
 
-        /* Media Print Khusus Tarikan Printer */
+        .lbl-nama {
+            font-size: 8pt;
+            font-weight: 800;
+            line-height: 1.1;
+            text-transform: uppercase;
+            max-height: 18pt;
+            overflow: hidden;
+            color: #000;
+        }
+
+        /* Penambahan style kategori */
+        .lbl-kategori {
+            font-size: 5.5pt;
+            font-weight: 600;
+            color: #475569;
+            text-transform: uppercase;
+            margin-top: 1.5px;
+        }
+
+        .lbl-sku {
+            font-size: 6pt;
+            font-weight: 700;
+            color: #475569;
+            margin-top: 1px;
+        }
+
+        .lbl-harga {
+            font-size: 11.5pt;
+            font-weight: 900;
+            color: #000;
+            margin-top: 2.5px;
+            letter-spacing: -0.5px;
+        }
+
+        .btn-print { width: 100%; padding: 14px; background-color: var(--primary); color: white; border: none; border-radius: 8px; font-weight: 600; font-size: 15px; cursor: pointer; margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background 0.2s; }
+        .btn-print:hover { background-color: var(--primary-hover); }
+        .btn-print:disabled { background-color: #cbd5e1; cursor: not-allowed; }
+
+        /* ATURAN CETAK PRINTER */
         @media print {
             body * { visibility: hidden; }
-            body { background: white; margin: 0; padding: 0; }
-            .dashboard-ui, .preview-container { display: none !important; }
-            
-            #printArea {
-                display: block;
+            .thermal-label-container, .thermal-label-container * { visibility: visible; }
+            .thermal-label-container {
                 position: absolute;
                 left: 0;
                 top: 0;
+                border: none;
+                box-shadow: none;
+                page-break-after: always;
             }
-
-            .label-box {
-                border: none; /* Garis panduan putus-putus hilang saat dicetak */
-                padding: 1.5mm; 
-            }
-
-            @page {
-                size: 50mm 24mm; /* Lebar 50mm, Tinggi Kertas (Tape) 24mm */
-                margin: 0mm;
-            }
+            @page { size: 50mm 24mm; margin: 0; }
         }
     </style>
 </head>
 <body>
 
-    <div class="dashboard-ui">
-        <h2>Cetak Label Showroom</h2>
-        <div id="status">Mengunduh data dari database...</div>
-        
-        <div class="form-group">
-            <label for="searchSKU">Cari Sampel (Nama / SKU):</label>
-            <input type="text" id="searchSKU" placeholder="Ketik Gorden Grand 05..." autocomplete="off">
-        </div>
-        
-        <div class="form-group">
-            <select id="resultList" size="6" style="display:none;"></select>
+    <div class="container">
+        <header>
+            <h1><i class="fa-solid fa-qrcode"></i> Label & QR Generator</h1>
+            <p>Double Two Interior Digital System (Epson LW-600P - 24mm)</p>
+        </header>
+
+        <div id="loadingStatus" class="status-banner status-loading">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span id="statusText">Menghubungkan ke Database...</span>
         </div>
 
-        <button onclick="window.print()">🖨️ Cetak Label</button>
-
-        <div class="preview-container">
-            <div id="previewBox">
+        <div class="workspace">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fa-solid fa-layer-group"></i> List SKU Induk Showroom
                 </div>
-        </div>
-    </div>
-
-    <div id="printArea">
-        <div class="label-box">
-            <div class="label-header">DOUBLE TWO INTERIOR</div>
-            <div class="label-product" id="lblProduct">Silakan Pilih Produk</div>
-            <div class="barcode-container">
-                <svg id="lblBarcode"></svg>
+                <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="searchBar" placeholder="Ketik Nama Sampel atau SKU..." disabled>
+                </div>
+                <div class="product-list-wrapper">
+                    <div id="productList">
+                        <p style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 14px;">
+                            Menunggu data disinkronkan...
+                        </p>
+                    </div>
+                </div>
             </div>
-            <div class="label-price" id="lblPrice">Rp 0 / Satuan</div>
+
+            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div class="card-title">
+                        <i class="fa-solid fa-eye"></i> Pratinjau Label (50x24mm)
+                    </div>
+                    <div class="preview-pane" id="previewPane">
+                        <p style="color: var(--text-muted); font-size: 13px; text-align: center;">
+                            Pilih salah satu SKU Induk di sebelah kiri.
+                        </p>
+                    </div>
+                </div>
+                <button class="btn-print" id="printBtn" disabled onclick="window.print()">
+                    <i class="fa-solid fa-print"></i> Cetak ke Printer Thermal
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Link CSV Google Sheets (Terintegrasi Langsung)
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScNAy0w1lHYGke4r8BL9D-9ZpwJMlpk2Joh0Z0pEI_XSlXxhldetTXzCL_MnQfbEOrT-uu6XAqIfte/pub?output=csv';
-        let productData = [];
+        const baseCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScNAy0w1lHYGke4r8BL9D-9ZpwJMlpk2Joh0Z0pEI_XSlXxhldetTXzCL_MnQfbEOrT-uu6XAqIfte/pub?output=csv';
+        const csvUrl = baseCsvUrl + '&t=' + Date.now(); // Cache buster
 
-        async function fetchDatabase() {
+        let databaseInduk = []; 
+        let qr = null; 
+
+        async function loadDatabaseOnline() {
             try {
                 const response = await fetch(csvUrl);
-                if (!response.ok) throw new Error('Gagal memuat');
-                const text = await response.text();
-                
-                if(text.trim().toLowerCase().startsWith("<!doctype html>")) {
-                    document.getElementById('status').innerText = "⚠️ Error: Akses tertutup. Cek pengaturan Publish to Web.";
-                    return;
-                }
-                
-                parseCSV(text);
-                document.getElementById('status').innerText = "✅ " + productData.length + " produk siap dicetak.";
+                if (!response.ok) throw new Error("Akses Google Sheets ditolak.");
+                const csvText = await response.text();
+                processCSVData(csvText);
             } catch (error) {
-                document.getElementById('status').innerText = "⚠️ Gagal mengambil data. Periksa jaringan internet.";
+                document.getElementById('loadingStatus').className = "status-banner status-error";
+                document.getElementById('statusText').innerText = "Gagal memuat database: " + error.message;
             }
         }
 
-        // Parser CSV yang tahan terhadap karakter koma di dalam teks (Robust Regex)
-        function parseCSV(text) {
-            const lines = text.split(/\r?\n/);
-            for(let i = 1; i < lines.length; i++) {
-                if(!lines[i].trim()) continue;
-                
-                let inQuote = false;
-                let value = '';
-                let row = [];
-                for (let j = 0; j < lines[i].length; j++) {
-                    let char = lines[i][j];
-                    if (inQuote) {
-                        if (char === '"' && lines[i][j + 1] === '"') { value += '"'; j++; }
-                        else if (char === '"') { inQuote = false; }
-                        else { value += char; }
-                    } else {
-                        if (char === '"') { inQuote = true; }
-                        else if (char === ',') { row.push(value); value = ''; }
-                        else { value += char; }
-                    }
-                }
-                row.push(value);
-                
-                if(row.length >= 8) {
-                    const barcode = row[0] ? row[0].trim() : '';
-                    const sku = row[1] ? row[1].trim() : '';
-                    const nama = row[3] ? row[3].trim() : '';
-                    const warna = row[4] ? row[4].trim() : '';
-                    const harga = row[6] ? row[6].trim() : '';
-                    const satuan = row[7] ? row[7].trim() : '';
+        function processCSVData(rawText) {
+            Papa.parse(rawText, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    const rawData = results.data;
+                    const seenNames = new Set();
+                    databaseInduk = [];
 
-                    if(sku || nama) {
-                        productData.push({ barcode, sku, nama, warna, harga, satuan });
-                    }
+                    rawData.forEach(item => {
+                        const nama = (item['Nama Sampel'] || '').trim().toUpperCase();
+                        
+                        if (nama && !seenNames.has(nama)) {
+                            seenNames.add(nama);
+                            
+                            let sku = item['SKU'] || item['Barcode'] || 'No-SKU';
+                            if (sku.endsWith('-')) {
+                                sku = sku.slice(0, -1);
+                            }
+                            item['SKU_Bersih'] = sku;
+
+                            let rawHarga = item['Harga Jual'] || '0';
+                            let angkaMurni = rawHarga.replace(/[^0-9]/g, '');
+                            item['Harga_Bersih'] = angkaMurni ? parseInt(angkaMurni) : 0;
+
+                            databaseInduk.push(item);
+                        }
+                    });
+
+                    document.getElementById('loadingStatus').className = "status-banner status-success";
+                    document.getElementById('statusText').innerHTML = `Berhasil merangkum <strong>${databaseInduk.length} SKU Induk</strong> dari Google Sheets.`;
+                    
+                    document.getElementById('searchBar').disabled = false;
+                    renderProductList(databaseInduk);
                 }
-            }
+            });
         }
 
-        const searchInput = document.getElementById('searchSKU');
-        const resultList = document.getElementById('resultList');
+        function renderProductList(data) {
+            const container = document.getElementById('productList');
+            container.innerHTML = "";
 
-        searchInput.addEventListener('input', function() {
-            const keyword = this.value.toLowerCase();
-            resultList.innerHTML = '';
-            
-            if(keyword.length < 2) {
-                resultList.style.display = 'none';
+            if (data.length === 0) {
+                container.innerHTML = `<p style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">Produk tidak ditemukan.</p>`;
                 return;
             }
 
-            const filtered = productData.filter(p => 
-                p.nama.toLowerCase().includes(keyword) || 
-                p.sku.toLowerCase().includes(keyword) ||
-                p.barcode.toLowerCase().includes(keyword)
-            ).slice(0, 10); 
+            data.forEach(item => {
+                const nama = item['Nama Sampel'] || 'Tanpa Nama';
+                const sku = item['SKU_Bersih'];
+                const kategori = item['Kategori'] || 'Produk';
+                const hargaFormat = item['Harga_Bersih'].toLocaleString('id-ID');
 
-            if(filtered.length > 0) {
-                resultList.style.display = 'block';
-                filtered.forEach(p => {
-                    const option = document.createElement('option');
-                    let displayText = p.nama;
-                    if(p.warna && p.warna !== "-") displayText += ` (${p.warna})`;
-                    option.text = displayText;
-                    option.value = JSON.stringify(p);
-                    resultList.add(option);
-                });
-            } else {
-                resultList.style.display = 'none';
-            }
+                const itemRow = document.createElement('div');
+                itemRow.className = "product-item";
+                itemRow.onclick = () => generateLabelPreview(item);
+
+                itemRow.innerHTML = `
+                    <div class="product-info">
+                        <h4>${nama}</h4>
+                        <p><i class="fa-solid fa-tag"></i> ${sku}</p>
+                    </div>
+                    <div class="product-meta">
+                        <span class="badge">${kategori}</span>
+                        <p style="font-size: 13px; font-weight: 700; margin-top: 6px; color: var(--success);">Rp ${hargaFormat}</p>
+                    </div>
+                `;
+                container.appendChild(itemRow);
+            });
+        }
+
+        function generateLabelPreview(item) {
+            const previewPane = document.getElementById('previewPane');
+            const printBtn = document.getElementById('printBtn');
+
+            const nama = item['Nama Sampel'] || 'Nama Produk';
+            const sku = item['SKU_Bersih'];
+            const kategori = item['Kategori'] || 'Produk'; // Penarikan data kategori
+            const hargaFormat = item['Harga_Bersih'].toLocaleString('id-ID');
+
+            previewPane.innerHTML = `
+                <div class="thermal-label-container" id="printableLabel">
+                    <div class="qr-box">
+                        <canvas id="qrCanvas"></canvas>
+                    </div>
+                    <div class="text-box">
+                        <div class="lbl-nama">${nama}</div>
+                        <div class="lbl-kategori">${kategori}</div> <div class="lbl-sku">${sku}</div>
+                        <div class="lbl-harga">Rp ${hargaFormat}</div>
+                    </div>
+                </div>
+            `;
+
+            qr = new QRious({
+                element: document.getElementById('qrCanvas'),
+                value: sku,
+                size: 200,      
+                level: 'H',     
+                background: 'white',
+                foreground: 'black'
+            });
+
+            printBtn.disabled = false;
+        }
+
+        document.getElementById('searchBar').addEventListener('input', function(e) {
+            const keyword = e.target.value.toLowerCase().trim();
+            const filteredData = databaseInduk.filter(item => {
+                const nama = (item['Nama Sampel'] || '').toLowerCase();
+                const sku = (item['SKU_Bersih'] || '').toLowerCase();
+                return nama.includes(keyword) || sku.includes(keyword);
+            });
+            renderProductList(filteredData);
         });
 
-        resultList.addEventListener('change', function() {
-            if(!this.value) return;
-            const data = JSON.parse(this.value);
-            
-            let prodName = data.nama;
-            if(data.warna && data.warna !== "-") prodName += ` ${data.warna}`;
-            document.getElementById('lblProduct').innerText = prodName.substring(0, 26); 
-
-            let hargaFormat = parseInt(data.harga.replace(/\D/g,'')) || 0;
-            if(hargaFormat > 0) {
-                document.getElementById('lblPrice').innerText = `Rp ${hargaFormat.toLocaleString('id-ID')} / ${data.satuan}`;
-            } else {
-                document.getElementById('lblPrice').innerText = "Harga Belum Diatur";
-            }
-
-            const codeToPrint = data.barcode || data.sku;
-            if(codeToPrint) {
-                JsBarcode("#lblBarcode", codeToPrint, {
-                    format: "CODE128",
-                    displayValue: true,
-                    fontSize: 9, /* Font angka barcode dikecilkan sedikit */
-                    margin: 0,
-                    width: 1.3, 
-                    height: 20  /* TINGGI BARCODE DIPENDEKKAN agar muat di area 24mm */
-                });
-            }
-
-            document.getElementById('previewBox').innerHTML = document.getElementById('printArea').innerHTML;
-            document.getElementById('printArea').style.display = 'block'; 
-        });
-
-        fetchDatabase();
+        window.addEventListener('DOMContentLoaded', loadDatabaseOnline);
     </script>
 </body>
 </html>
