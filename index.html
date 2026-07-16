@@ -1,77 +1,598 @@
 <!DOCTYPE html>
-<html lang="ms">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak Label 24mm - Double Two Interior</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=device-width, initial-scale=1.0">
+    <title>Double Two Interior - Label & Barcode Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="family">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 
     <style>
-        /* =========================================
-           TETAPAN CETAKAN KHAS EPSON LW-600P
-           Pita 24mm | Potongan 50mm (Landskap)
-           ========================================= */
+        :root {
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Status & Error Banner */
+        .status-banner {
+            padding: 14px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid transparent;
+        }
+
+        .status-loading {
+            background-color: #eff6ff;
+            color: #1d4ed8;
+            border-color: #bfdbfe;
+        }
+
+        .status-success {
+            background-color: #f0fdf4;
+            color: #16a34a;
+            border-color: #bbf7d0;
+        }
+
+        .status-error {
+            background-color: #fef2f2;
+            color: #dc2626;
+            border-color: #fecaca;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        /* Emergency Manual Upload */
+        .manual-upload-box {
+            background: #fffbeb;
+            border: 1px dashed #d97706;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        /* Main Workspace */
+        .workspace {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .workspace {
+                grid-template-columns: 1.2fr 0.8fr;
+            }
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Search Controls */
+        .search-box {
+            position: relative;
+            margin-bottom: 16px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .search-box input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        /* Product List Layout */
+        .product-list-wrapper {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+
+        .product-item {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .product-item:last-child {
+            border-bottom: none;
+        }
+
+        .product-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .product-info h4 {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .product-info p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .product-meta {
+            text-align: right;
+        }
+
+        .badge {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        /* Label Template Box (Screen Mode) */
+        .preview-pane {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 250px;
+            background: #f1f5f9;
+            border-radius: 8px;
+            border: 2px dashed #cbd5e1;
+            padding: 20px;
+        }
+
+        /* STIKER LABEL FISIK (Ukuran Akurat Thermal 50mm x 30mm) */
+        .thermal-label-container {
+            width: 50mm;
+            height: 30mm;
+            background: #ffffff;
+            color: #000000;
+            padding: 1.5mm 2mm;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            overflow: hidden;
+            border: 1px solid #000000; /* Garis panduan potong di layar */
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .label-header {
+            width: 100%;
+            text-align: center;
+            font-weight: 800;
+            font-size: 8pt;
+            letter-spacing: 0.5px;
+            border-bottom: 0.5px solid #000000;
+            padding-bottom: 1px;
+            text-transform: uppercase;
+        }
+
+        .label-title {
+            width: 100%;
+            text-align: center;
+            font-weight: 700;
+            font-size: 7.5pt;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 1px;
+        }
+
+        .barcode-svg {
+            width: 95%;
+            height: 11mm; /* Mengunci tinggi area barcode */
+            max-height: 11mm;
+        }
+
+        .label-footer {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 7pt;
+            font-weight: 600;
+            border-top: 0.5px solid #000000;
+            padding-top: 1px;
+        }
+
+        .label-price {
+            font-weight: 800;
+            font-size: 7.5pt;
+        }
+
+        /* Print Trigger Button */
+        .btn-print {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+
+        .btn-print:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-print:disabled {
+            background-color: #cbd5e1;
+            cursor: not-allowed;
+        }
+
+        /* ATURAN KHUSUS CETAK PRINTER THERMAL (HANYA MENCETAK STIKER) */
         @media print {
-            body > :not(#printAreaWrapper) {
-                display: none !important;
+            body * {
+                visibility: hidden;
             }
-            body {
-                background-color: transparent !important;
-                margin: 0 !important;
-                padding: 0 !important;
+            .thermal-label-container, .thermal-label-container * {
+                visibility: visible;
             }
-            #printAreaWrapper {
-                display: flex !important;
-                position: fixed;
-                top: 0;
+            .thermal-label-container {
+                position: absolute;
                 left: 0;
-                width: 50mm !important;
-                height: 24mm !important;
-                background: white !important; 
-                padding: 1.5mm !important;
-                box-sizing: border-box !important;
-                align-items: center !important;
-                justify-content: flex-start !important;
-                gap: 2mm !important;
+                top: 0;
+                border: none; /* Hilangkan batas garis saat dicetak nyata */
+                box-shadow: none;
                 page-break-after: always;
             }
             @page {
-                size: 50mm 24mm;
+                size: 50mm 30mm;
                 margin: 0;
             }
         }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans min-h-screen pb-10">
+<body>
 
-    <div class="bg-white shadow-sm p-5 mb-6 border-b border-gray-200">
-        <div class="max-w-5xl mx-auto flex justify-between items-center">
-            <div>
-                <h1 class="text-xl font-black text-gray-900 uppercase tracking-wider">Cetak Label Fizikal</h1>
-                <p class="text-xs text-gray-500 font-medium">Epson LW-600P (24x50mm) - Khas SKU Induk</p>
+    <div class="container">
+        <header>
+            <h1><i class="fa-solid fa-barcode"></i> Label & Barcode Generator</h1>
+            <p>Double Two Interior Digital System</p>
+        </header>
+
+        <div id="loadingStatus" class="status-banner status-loading">
+            <i class="fa-solid fa-spinner fa-spin"></i>
+            <span id="statusText">Menghubungkan ke basis data Google Sheets...</span>
+        </div>
+
+        <div id="manualUploadSection" class="manual-upload-box">
+            <p style="font-size: 13px; font-weight: 600; color: #b45309; margin-bottom: 8px;">
+                <i class="fa-solid fa-triangle-exclamation"></i> Cadangan: Unggah Database CSV Manual
+            </p>
+            <input type="file" id="csvFileInput" accept=".csv" style="font-size: 13px;">
+        </div>
+
+        <div class="workspace">
+            <div class="card">
+                <div class="card-title">
+                    <i class="fa-solid fa-magnifying-glass"></i> Cari Produk Showroom
+                </div>
+                <div class="search-box">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="searchBar" placeholder="Masukkan Nama Sampel, SKU, atau Kode Warna..." disabled>
+                </div>
+                <div class="product-list-wrapper">
+                    <div id="productList">
+                        <p style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 14px;">
+                            Menunggu data disinkronkan...
+                        </p>
+                    </div>
+                </div>
             </div>
-            <div id="loadingStatus" class="text-sm font-bold text-amber-500 animate-pulse">
-                ⏳ Memuatkan Data...
+
+            <div class="card" style="display: flex; flex-direction: column; justify-content: space-between;">
+                <div>
+                    <div class="card-title">
+                        <i class="fa-solid fa-eye"></i> Pratinjau Ukuran Label (50x30mm)
+                    </div>
+                    <div class="preview-pane" id="previewPane">
+                        <p style="color: var(--text-muted); font-size: 13px; text-align: center;">
+                            Silakan pilih produk di sebelah kiri untuk membuat label stiker.
+                        </p>
+                    </div>
+                </div>
+                <button class="btn-print" id="printBtn" disabled onclick="window.print()">
+                    <i class="fa-solid fa-print"></i> Cetak ke Printer Thermal
+                </button>
             </div>
         </div>
     </div>
 
-    <div class="max-w-5xl mx-auto px-4 space-y-4">
-        
-        <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="🔍 Cari nama sampel atau SKU..." class="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-amber-400 outline-none transition-all text-sm">
-        </div>
+    <script>
+        // Pautan Valid Google Sheets Terbit Sebagai CSV Anda
+        const baseCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScNAy0w1lHYGke4r8BL9D-9ZpwJMlpk2Joh0Z0pEI_XSlXxhldetTXzCL_MnQfbEOrT-uu6XAqIfte/pub?output=csv';
+        // Cache-Buster Otomatis untuk Memotong Memori Browser Lama (&t=waktu_sekarang)
+        const csvUrl = baseCsvUrl + '&t=' + Date.now();
 
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-100 text-xs uppercase tracking-wider text-gray-600">
-                            <th class="p-4 border-b">SKU Induk</th>
-                            <th class="p-4 border-b">Nama Sampel</th>
-                            <th class="p-4 border-b">Harga Jualan</th>
-                            <th class="p-4 border-b text-center">Tindakan</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tableBody" class="text-sm divide-y divide-gray-100">
+        let databaseMaster = [];
+
+        // Fungsi Otomatis Mengambil Data CSV dari Cloud
+        async function loadDatabaseOnline() {
+            const statusBanner = document.getElementById('loadingStatus');
+            const statusText = document.getElementById('statusText');
+            const searchBar = document.getElementById('searchBar');
+
+            try {
+                const response = await fetch(csvUrl);
+                if (!response.ok) throw new Error("Akses server Google Sheets ditolak.");
+
+                const csvText = await response.text();
+
+                // PENGAMAN KRITIS: Cek jika respons berupa login HTML Google (Berarti spreadsheet di-unpublish/privat)
+                if (csvText.trim().startsWith("<!DOCTYPE html>") || csvText.includes("<html")) {
+                    throw new Error("Pautan terkunci. Google Sheets mengembalikan proteksi HTML. Pastikan setelan 'Terbitkan ke Web (Publish to Web)' berformat CSV tetap Aktif.");
+                }
+
+                processCSVData(csvText);
+
+            } catch (error) {
+                console.error("Database Error:", error);
+                statusBanner.className = "status-banner status-error";
+                statusBanner.innerHTML = `
+                    <div><strong><i class="fa-solid fa-circle-xmark"></i> Gagal Sinkronisasi Otomatis</strong></div>
+                    <div style="font-size: 12px; margin-top: 4px;">Penyebab: ${error.message}</div>
+                    <div style="font-size: 12px; margin-top: 4px; color:#7f1d1d;">Silakan gunakan tombol cadangan di bawah ini untuk mengunggah file data secara manual.</div>
+                `;
+                // Tampilkan form darurat upload file manual
+                document.getElementById('manualUploadSection').style.display = 'block';
+            }
+        }
+
+        // Fungsi Memproses teks CSV mentah menggunakan PapaParse
+        function processCSVData(rawText) {
+            Papa.parse(rawText, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    databaseMaster = results.data;
+                    
+                    // Validasi apakah struktur kolom sesuai
+                    if(databaseMaster.length > 0 && (databaseMaster[0]['Nama Sampel'] || databaseMaster[0]['SKU'])) {
+                        showSuccessStatus(`Berhasil memuat ${databaseMaster.length} varian produk dari Google Sheets.`);
+                        enableControls();
+                        renderProductList(databaseMaster);
+                    } else {
+                        throw new Error("Format kolom CSV tidak dikenali. Baris 1 header harus memuat komponen seperti 'Nama Sampel', 'SKU', dll.");
+                    }
+                },
+                error: function(err) {
+                    throw new Error("Gagal membaca struktur data tabel: " + err.message);
+                }
+            });
+        }
+
+        // Tampilan Status Berhasil
+        function showSuccessStatus(message) {
+            const statusBanner = document.getElementById('loadingStatus');
+            statusBanner.className = "status-banner status-success";
+            statusBanner.innerHTML = `<i class="fa-solid fa-circle-check"></i> <span>${message}</span>`;
+        }
+
+        // Aktifkan Form Input
+        function enableControls() {
+            document.getElementById('searchBar').disabled = false;
+            document.getElementById('searchBar').focus();
+        }
+
+        // Merender Daftar Produk ke Sisi Kiri
+        function renderProductList(data) {
+            const container = document.getElementById('productList');
+            container.innerHTML = "";
+
+            if (data.length === 0) {
+                container.innerHTML = `<p style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 13px;">Produk tidak ditemukan.</p>`;
+                return;
+            }
+
+            data.forEach((item, index) => {
+                // Mapping penamaan variabel berdasarkan struktur 15 komponen database Anda
+                const nama = item['Nama Sampel'] || 'Tanpa Nama';
+                const kodeWarna = item['Kode Warna'] || '-';
+                const sku = item['SKU'] || item['Barcode'] || 'No-SKU';
+                const kategori = item['Kategori'] || 'Umum';
+                const harga = item['Harga Jual'] ? parseInt(item['Harga Jual']).toLocaleString('id-ID') : '0';
+                const satuan = item['Satuan Jual'] || item['Satuan'] || 'm';
+
+                const itemRow = document.createElement('div');
+                itemRow.className = "product-item";
+                itemRow.onclick = () => generateLabelPreview(item);
+
+                itemRow.innerHTML = `
+                    <div class="product-info">
+                        <h4>${nama} (${kodeWarna})</h4>
+                        <p>SKU: ${sku}</p>
+                    </div>
+                    <div class="product-meta">
+                        <span class="badge">${kategori}</span>
+                        <p style="font-size: 13px; font-weight: 600; margin-top: 4px; color: var(--primary);">Rp ${harga}/${satuan}</p>
+                    </div>
+                `;
+                container.appendChild(itemRow);
+            });
+        }
+
+        // Logika Pembuatan Pratinjau Stiker Fisik (50mm x 30mm)
+        function generateLabelPreview(item) {
+            const previewPane = document.getElementById('previewPane');
+            const printBtn = document.getElementById('printBtn');
+
+            const nama = item['Nama Sampel'] || 'Nama Produk';
+            const kodeWarna = item['Kode Warna'] || '';
+            const barcodeVal = item['Barcode'] || item['SKU'] || '00000000';
+            const kategori = item['Kategori'] || 'Interior';
+            const harga = item['Harga Jual'] ? parseInt(item['Harga Jual']).toLocaleString('id-ID') : '0';
+            const satuan = item['Satuan Jual'] || item['Satuan'] || 'm';
+
+            // Template Struktur HTML Stiker Label
+            previewPane.innerHTML = `
+                <div class="thermal-label-container" id="printableLabel">
+                    <div class="label-header">
+                        Double Two Interior
+                    </div>
+                    <div class="label-title">
+                        ${nama} ${kodeWarna ? '[' + kodeWarna + ']' : ''}
+                    </div>
+                    <svg class="barcode-svg" id="barcodeTarget"></svg>
+                    <div class="label-footer">
+                        <span>${kategori}</span>
+                        <span class="label-price">Rp ${harga}/${satuan}</span>
+                    </div>
+                </div>
+            `;
+
+            // Suntik Pembuatan Batang Barcode (Menggunakan tipe CODE128 yang ringkas dan universal)
+            try {
+                JsBarcode("#barcodeTarget", barcodeVal, {
+                    format: "CODE128",
+                    width: 1.2,
+                    height: 35,
+                    displayValue: true,
+                    fontSize: 8,
+                    fontOptions: "bold",
+                    margin: 0,
+                    textMargin: 1
+                });
+            } catch (err) {
+                console.error("Gagal merender batang kode barcode:", err);
+            }
+
+            // Aktifkan tombol print printer thermal
+            printBtn.disabled = false;
+        }
+
+        // Sistem Filter Pencarian Produk Real-Time
+        document.getElementById('searchBar').addEventListener('input', function(e) {
+            const keyword = e.target.value.toLowerCase().trim();
+            
+            const filteredData = databaseMaster.filter(item => {
+                const nama = (item['Nama Sampel'] || '').toLowerCase();
+                const sku = (item['SKU'] || '').toLowerCase();
+                const barcode = (item['Barcode'] || '').toLowerCase();
+                const warna = (item['Kode Warna'] || '').toLowerCase();
+                const kategori = (item['Kategori'] || '').toLowerCase();
+
+                return nama.includes(keyword) || 
+                       sku.includes(keyword) || 
+                       barcode.includes(keyword) || 
+                       warna.includes(keyword) ||
+                       kategori.includes(keyword);
+            });
+
+            renderProductList(filteredData);
+        });
+
+        // Event Listener untuk Upload CSV manual (Jika mode internet mati)
+        document.getElementById('csvFileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    processCSVData(evt.target.result);
+                    showSuccessStatus(`Berhasil memuat ${databaseMaster.length} varian produk secara OFFLINE (Manual).`);
+                    enableControls();
+                } catch (err) {
+                    alert("Error: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // Jalankan sinkronisasi cloud otomatis begitu halaman web terbuka sempurna
+        window.addEventListener('DOMContentLoaded', loadDatabaseOnline);
+    </script>
+</body>
+</html>
