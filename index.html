@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- PapaParse untuk Parsing CSV Premium -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    <!-- QRious untuk QR Code (Ganti dari Barcode) -->
+    <!-- QRious untuk QR Code -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
 
     <style>
@@ -83,12 +83,20 @@
         }
 
         .qr-box {
-            width: 20mm;
-            height: 20mm;
+            width: 19.5mm;
+            height: 19.5mm;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        /* PERBAIKAN KRITIS: Mengunci kanvas QR agar tidak meluber */
+        .qr-box canvas {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: contain;
         }
 
         .text-box {
@@ -116,7 +124,6 @@
             margin-top: 2px;
         }
 
-        /* FONT HARGA DIPERBESAR */
         .lbl-harga {
             font-size: 11.5pt;
             font-weight: 900;
@@ -137,7 +144,7 @@
                 position: absolute;
                 left: 0;
                 top: 0;
-                border: none; /* Hilangkan garis panduan di hasil print */
+                border: none;
                 box-shadow: none;
                 page-break-after: always;
             }
@@ -200,8 +207,8 @@
         const baseCsvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vScNAy0w1lHYGke4r8BL9D-9ZpwJMlpk2Joh0Z0pEI_XSlXxhldetTXzCL_MnQfbEOrT-uu6XAqIfte/pub?output=csv';
         const csvUrl = baseCsvUrl + '&t=' + Date.now(); // Cache buster
 
-        let databaseInduk = []; // Hanya menyimpan SKU Induk
-        let qr = null; // Object QRious
+        let databaseInduk = []; 
+        let qr = null; 
 
         async function loadDatabaseOnline() {
             try {
@@ -227,20 +234,17 @@
                     rawData.forEach(item => {
                         const nama = (item['Nama Sampel'] || '').trim().toUpperCase();
                         
-                        // FILTER: Hanya ambil 1 data per Nama Sampel (Otomatis membuang varian warna)
                         if (nama && !seenNames.has(nama)) {
                             seenNames.add(nama);
                             
-                            // 1. Bersihkan SKU (Buang tanda "-" di paling belakang jika ada)
                             let sku = item['SKU'] || item['Barcode'] || 'No-SKU';
                             if (sku.endsWith('-')) {
                                 sku = sku.slice(0, -1);
                             }
                             item['SKU_Bersih'] = sku;
 
-                            // 2. Pembersih Harga Anti-NaN (Hanya ambil angka murni)
                             let rawHarga = item['Harga Jual'] || '0';
-                            let angkaMurni = rawHarga.replace(/[^0-9]/g, ''); // Buang Rp, koma, titik, spasi
+                            let angkaMurni = rawHarga.replace(/[^0-9]/g, '');
                             item['Harga_Bersih'] = angkaMurni ? parseInt(angkaMurni) : 0;
 
                             databaseInduk.push(item);
@@ -297,7 +301,6 @@
             const sku = item['SKU_Bersih'];
             const hargaFormat = item['Harga_Bersih'].toLocaleString('id-ID');
 
-            // Susunan Stiker dengan QR Code di Kiri dan Teks di Kanan
             previewPane.innerHTML = `
                 <div class="thermal-label-container" id="printableLabel">
                     <div class="qr-box">
@@ -311,12 +314,11 @@
                 </div>
             `;
 
-            // Eksekusi Generate QR Code ke dalam Canvas
             qr = new QRious({
                 element: document.getElementById('qrCanvas'),
                 value: sku,
-                size: 200,      // Render resolusi tinggi agar hasil print tidak pecah
-                level: 'H',     // Error correction tinggi (Aman walau stiker tergores)
+                size: 200,      
+                level: 'H',     
                 background: 'white',
                 foreground: 'black'
             });
@@ -324,7 +326,6 @@
             printBtn.disabled = false;
         }
 
-        // Fitur Pencarian Cepat
         document.getElementById('searchBar').addEventListener('input', function(e) {
             const keyword = e.target.value.toLowerCase().trim();
             const filteredData = databaseInduk.filter(item => {
@@ -335,7 +336,6 @@
             renderProductList(filteredData);
         });
 
-        // Jalankan saat web dibuka
         window.addEventListener('DOMContentLoaded', loadDatabaseOnline);
     </script>
 </body>
